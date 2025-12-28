@@ -48,6 +48,9 @@ def process_telegram_post(url, get_fires_data):
             st.write(location_data)
         
         geocode_result = geocode_location(location_data["final_answer"])
+        if geocode_result[0] is None or geocode_result[1] is None:
+            st.error("Geocoding from extracted text failed. See reasoning model's output and try again.", icon="❌")
+            return
         lat, lon = geocode_result[0], geocode_result[1]
         
         st.session_state.strike_location = {'lat': lat, 'lon': lon}
@@ -55,7 +58,7 @@ def process_telegram_post(url, get_fires_data):
         progress_bar.progress(66)
         
         if get_fires_data:
-            fires_df = fetch_fires(lat, lon)
+            fires_df = fetch_fires(lat, lon, radius_km=50, day_range=1)
             if fires_df is not None and not fires_df.empty:
                 st.session_state.fires_df = fires_df
             else:
@@ -102,6 +105,7 @@ def create_map_layers(strike_location, fires_df):
 
 
 def display_map(strike_location, fires_df):
+    # Set layout depending on whether fires data is available
     if st.session_state.fires_df is not None:
         col1, col2 = st.columns([2, 1])
     else:
