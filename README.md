@@ -13,17 +13,34 @@ For some basic notes and observations, see the [Notes](#Notes) section.
 
 ## Setup
 
-Before running the application, make sure you create a new `config.json` file in the same folder as `dashboard.py`. In that file add the following lines:
+Create a virtual environment in the project directory and activate it:
 
-```json
-{
-    "firms_api_key": "YOUR-FIRMS-MAP-KEY-GOES-HERE"
-}
+```
+python -m venv venv
+
+venv\Scripts\activate        # Windows
+source venv/bin/activate     # macOS/Linux
 ```
 
-If you do not have a map key, you can get one for free from [NASA's FIRMS site](https://firms.modaps.eosdis.nasa.gov/api/map_key/).
+Install the dependencies:
 
-Alternatively, you can you can set your map key as an env variable and make the necessary changes to `load_api_key()` in `/src/firms/firms_grabber.py`.
+```
+pip install streamlit pandas numpy pydeck beautifulsoup4 geopy requests openai python-dotenv
+```
+
+There is no config file. API keys are stored in a `.env` file placed **inside the virtual environment**, which `src/settings.py` loads automatically at startup. On Windows that file is `venv\.env`:
+
+```
+# Required
+FIRMS_API_KEY=YOUR-FIRMS-MAP-KEY-GOES-HERE
+
+# Optional - defaults shown below
+LOCAL_LLM_BASE_URL=http://localhost:1234/v1
+LOCAL_LLM_MODEL=openai/gpt-oss-20b
+LOCAL_LLM_API_KEY=not-needed
+```
+
+The loader checks the `VIRTUAL_ENV` environment variable of the active venv and falls back to a `.env` file in the project root if no venv is detected. If you do not have a FIRMS map key, you can get one for free from [NASA's FIRMS site](https://firms.modaps.eosdis.nasa.gov/api/map_key/).
 
 Once you are properly set up you can run the app from the main directory with
 
@@ -42,13 +59,15 @@ streamlit run dashboard.py
     * *Used to extract individual social media posts from Telegram*
 * GeoPy
     * *Used to call the [Nominatim](https://nominatim.org/) geocoding API*
-* Ollama
-    * *There are better ways to run local AI models, however Ollama trivializes swapping between models and supports running models on the cloud, e.g. `gpt-oss:120b-cloud`. For more information, see the official [Ollama documentation](https://docs.ollama.com/cloud).*
+* OpenAI Python client
+    * *Used to talk to a local OpenAI-compatible model server such as [LM Studio](https://lmstudio.ai/), llama.cpp server, or vLLM. Point `LOCAL_LLM_BASE_URL` at whichever server you run.*
+* python-dotenv
+    * *Used to load the API keys from the `.env` file stored inside the virtual environment.*
 
     
 ## Default settings
 
-* By default the project is set to use the `gpt-oss:20b` model by OpenAi and [available on Ollama](https://ollama.com/library/gpt-oss:20b). You can swap to any other Ollama model, however these have not been tested thoroughly. 
+* By default the project targets LM Studio on `http://localhost:1234/v1` and uses the `openai/gpt-oss-20b` model. Change `LOCAL_LLM_BASE_URL` and `LOCAL_LLM_MODEL` in your venv `.env` to use another local OpenAI-compatible server (e.g. `http://localhost:8080/v1` for llama.cpp) or model. The exact model identifier is shown in LM Studio's server tab.
 
 * By default, the app will send four requests to the FIRMS API for data from the following sources: `VIIRS_NOAA20_NRT`, `VIIRS_SNPP_NRT`, `MODIS_NOAA20_NRT`, and `MODIS_SNPP_NRT`. Near Real-Time (NRT) data is generally available ~3 hours after observation by the satellite. All requests will try to fetch data for fires that occured **during the last day** and within a radius of **50km**. You can change these default values in `/src/firms/firms_grabber.py`.
 
@@ -58,7 +77,7 @@ streamlit run dashboard.py
   
 ## Notes
 
-- Generally speaking the locally run `gpt-oss:20b` model has performed extremely well and consistently. It is a larger and more taxing model but at least it actually sticks to the instructions provided by the prompt, unlike some smaller models. Running the model on my personal computer takes ~10-40 seconds to perform a task, so there's quite a bit of variance in runtime.
+- Generally speaking the locally run `gpt-oss-20b` model has performed extremely well and consistently. It is a larger and more taxing model but at least it actually sticks to the instructions provided by the prompt, unlike some smaller models. Running the model on my personal computer takes ~10-40 seconds to perform a task, so there's quite a bit of variance in runtime.
 
 - The prompt in `prompt.txt` explicitly tells the LLM to avoid returning the name of the country found in the social media post and instead to return the name of the local settlement and province. This is primarily to avoid situations where internationally unrecognized Russian territorial claims (e.g. Donetsk Oblast, Russian Federation) cause issues with the LLM or geocoding. It's a niche problem and you should change it depending on your use-case.
 
