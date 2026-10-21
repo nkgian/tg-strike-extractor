@@ -36,7 +36,8 @@ FIRMS_API_KEY=YOUR-FIRMS-MAP-KEY-GOES-HERE
 
 # Optional - defaults shown below - NOTE: DEFAULT PORT IS 1234 (I.E. LM STUDIO)! 
 LOCAL_LLM_BASE_URL=http://localhost:1234/v1
-LOCAL_LLM_MODEL=openai/gpt-oss-20b
+# Originally used "openai/gpt-oss-20b", but Google's gemma models are better for NLP tasks
+LOCAL_LLM_MODEL=google/gemma-3-27b-it
 LOCAL_LLM_API_KEY=not-needed
 ```
 
